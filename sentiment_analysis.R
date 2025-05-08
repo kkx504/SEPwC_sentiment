@@ -19,7 +19,9 @@ load_data<-function(filename, stringAsfunction = FALSE) { #we need this to do st
 #only english language
   data <- data[data$language == "en", ] #needs the comma at the end to ensure we keep ALL columns but only rows with 'en'
 #maintaing id collumn
+  data$id <- is.character(data$id)
     return(data)
+  
 }
 
 word_analysis<-function(toot_data, emotion) {
