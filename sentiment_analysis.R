@@ -10,19 +10,25 @@ library(ggpubr)
 
 load_data<-function(filename, stringAsfunction = FALSE) { #we need this to do string manipulation
   data <- read.csv(filename) 
-#need to remove any html
-  data <- data %>% 
-    mutate_if(is.character, ~gsub("<[^>]+>", " ", .)) %>% #gsub is designed to character vectors (each column) not whole data frame, so we use anonymous function
-    mutate_if(is.character, ~gsub("\\s+", " ", .)) #gemini suggested removing multiple white spaces 
-#change to date time format
-  data$created_at <- ymd_hms(data$created_at)
-#only english language
-  data <- data[data$language == "en", ] #needs the comma at the end to ensure we keep ALL columns but only rows with 'en'
-#maintaing id collumn
-  data$id <- is.character(data$id)
-    return(data)
   
+  #need to remove any html
+  data <- data %>% 
+    mutate_if(is.character, ~gsub("<[^>]+>", " ", .)) %>% #we use an anonymous function to ensure the code passes through each element, . represents the current thing being operated on
+    mutate_if(is.character, ~gsub("\\s+", " ", .)) #gemini suggested removing multiple white spaces to not mess anything up
+
+  #change to date time format
+  data$created_at <- ymd_hms(data$created_at)
+
+  #only english language
+  data <- data[data$language == "en", ] #needs the comma at the end to ensure we keep ALL columns but only rows with 'en'
+
+  #ensuring id column is character class
+  data$id <- as.character(data$id) #as.character turns it into character vector
+    
+  return(data)
 }
+
+
 
 word_analysis<-function(toot_data, emotion) {
 
