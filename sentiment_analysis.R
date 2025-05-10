@@ -32,11 +32,26 @@ load_data<-function(filename, stringAsfunction = FALSE) { #we need this to do st
 
 word_analysis<-function(toot_data, emotion) {
 
+  #want to create columns called sentiment and word
+  
+  #need to group all rows together and seperate into just word data then group them by different sentiments, count how many sentiments for each and display these
+  #1. combine the text rows into single string
+  #2.split into wordss
+  #3. clean the words
+  #4. use nrs lexicon - need to cite
+  #join words with lexicon using inner join
+  #group by sentiment
+  #count senitments
   #has columns id, sentiment, created_at and word
   library(tidyverse)
-  toot_data <- read_csv(toot_data)
-  str(toot_data)
+  library(textdata)
+  
+  get_sentiments("nrc") 
+  toot_data <- read_csv("toots.csv") %>% 
+    group_by(content)
+  mutate(sentiment = !!emotion)
   select(toot_data, id, sentiment, created_at, word)
+
  
   #no more than 10 rows
   #descending order based on count column
