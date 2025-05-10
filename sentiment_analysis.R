@@ -40,9 +40,10 @@ word_analysis<-function(toot_data, emotion) {
   toot_data <- read_csv("toots.csv")
   all_text <- paste(toot_data$content, collapse = " ") #from gemini
   #2.split into wordss
-  words <- strsplit(all_text, split = " ")
+  words <- strsplit(all_text, split = " ")[[1]]
   #3. clean the words (no punctuation) 
-  clean_words <- str_remove_all(words, "[[:punct:]]") [[1]]
+  clean_words <- str_remove_all(words, "[[:punct:]]") 
+  clean_words <- str_to_lower(clean_words)
   #4. use nrs lexicon - need to cite
   #join words with lexicon using inner join
   #group by sentiment
