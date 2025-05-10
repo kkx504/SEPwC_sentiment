@@ -42,7 +42,7 @@ word_analysis<-function(toot_data, emotion) {
   #2.split into wordss
   words <- strsplit(all_text, split = " ")
   #3. clean the words (no punctuation) 
-  clean_words <- str_remove_all(words, "[[:punct:]]")
+  clean_words <- str_remove_all(words, "[[:punct:]]") [[1]]
   #4. use nrs lexicon - need to cite
   #join words with lexicon using inner join
   #group by sentiment
