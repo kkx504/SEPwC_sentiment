@@ -33,9 +33,14 @@ load_data<-function(filename, stringAsfunction = FALSE) { #we need this to do st
 word_analysis<-function(toot_data, emotion) {
 
   #has columns id, sentiment, created_at and word
+  library(tidyverse)
+  toot_data <- read_csv(toot_data)
+  str(toot_data)
+  select(toot_data, id, sentiment, created_at, word)
+ 
   #no more than 10 rows
   #descending order based on count column
-  
+class(toot_data)
     return()
 }
 
