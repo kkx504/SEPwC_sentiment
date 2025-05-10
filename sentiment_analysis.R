@@ -54,19 +54,16 @@ word_analysis<-function(toot_data, emotion) {
   #join words with lexicon using inner join
   words_with_sentiment <- inner_join(tibble(word = clean_words), nrc_lexicon, by = "word") #need to use tibble because inner join only used dataframes and we are using a string at the moment
   print(words_with_sentiment)
-  #group by sentiment
-  words_with_sentiment %>% 
-    group_by(sentiment) %>% 
-    count(word, sort = TRUE) 
+  #group by sentiment #from gemini
+  top_words <- toot_data %>% 
+    select(id, created_at, content) %>% # added id and created_at
+    inner_join(words_with_sentiment, by = c("content" = "word")) %>% #join
+    filter(sentiment == as.character(emotion)) %>%
+    group_by(word, id, created_at) %>% #added id and created at
+    count(sort = TRUE) %>%
+    slice_max(n = 10, order_by = n) %>%
+    ungroup()
     
-  #count senitments
-  #only print word and count
-  #has columns id, sentiment, created_at and word
-
-
- 
-  #no more than 10 rows
-  #descending order based on count column
 
     return()
 }
