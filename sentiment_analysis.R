@@ -31,23 +31,27 @@ load_data<-function(filename, stringAsfunction = FALSE) { #we need this to do st
 
 
 word_analysis<-function(toot_data, emotion) {
-
+  library(tidyverse)
+  library(textdata)
   #want to create columns called sentiment and word
   
   #need to group all rows together and seperate into just word data then group them by different sentiments, count how many sentiments for each and display these
   #1. combine the text rows into single string
+  toot_data <- read_csv("toots.csv")
+  all_text <- paste(toot_data$content, collapse = " ") #from gemini
   #2.split into wordss
-  #3. clean the words
+  words <- strsplit(all_text, split = " ")
+  #3. clean the words (no punctuation) 
+  clean_words <- str_remove_all(words, "[[:punct:]]")
   #4. use nrs lexicon - need to cite
   #join words with lexicon using inner join
   #group by sentiment
   #count senitments
   #has columns id, sentiment, created_at and word
-  library(tidyverse)
-  library(textdata)
+
   
   get_sentiments("nrc") 
-  toot_data <- read_csv("toots.csv") %>% 
+   %>% 
     group_by(content)
   mutate(sentiment = !!emotion)
   select(toot_data, id, sentiment, created_at, word)
