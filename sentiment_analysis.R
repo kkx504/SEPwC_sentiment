@@ -37,7 +37,7 @@ word_analysis<-function(toot_data, emotion) {
   
   #need to group all rows together and seperate into just word data then group them by different sentiments, count how many sentiments for each and display these
   #1. combine the text rows into single string
-  toot_data <- read_csv("toots.csv")
+  toot_data <- read.csv("../data/toots.csv")
   all_text <- paste(toot_data$content, collapse = " ") #from gemini
   #2.split into wordss
   words <- strsplit(all_text, split = " ")[[1]]
@@ -55,14 +55,14 @@ word_analysis<-function(toot_data, emotion) {
   print(words_with_sentiment)
   #group by sentiment
   words_with_sentiment %>% 
-    group_by(sentiment)
+    group_by(sentiment) %>% 
+    count(word, sort = TRUE)
   #count senitments
   #only print word and count
   #has columns id, sentiment, created_at and word
 
   
   
-   %>% 
     group_by(content)
   mutate(sentiment = !!emotion)
   select(toot_data, id, sentiment, created_at, word)
