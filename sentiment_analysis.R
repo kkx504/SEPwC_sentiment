@@ -45,13 +45,23 @@ word_analysis<-function(toot_data, emotion) {
   clean_words <- str_remove_all(words, "[[:punct:]]") 
   clean_words <- str_to_lower(clean_words)
   #4. use nrs lexicon - need to cite
+  nrc_lexicon <- get_sentiments("nrc") %>% 
+  filter(sentiment != ("positive")) %>% #we only want emotions
+  filter(sentiment != ("negative"))
+  print(nrc_lexicon)
+
   #join words with lexicon using inner join
+  words_with_sentiment <- inner_join(tibble(word = clean_words), nrc_lexicon, by = "word") #need to use tibble because inner join only used dataframes and we are using a string at the moment
+  print(words_with_sentiment)
   #group by sentiment
+  words_with_sentiment %>% 
+    group_by(sentiment)
   #count senitments
+  #only print word and count
   #has columns id, sentiment, created_at and word
 
   
-  get_sentiments("nrc") 
+  
    %>% 
     group_by(content)
   mutate(sentiment = !!emotion)
