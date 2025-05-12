@@ -37,7 +37,7 @@ word_analysis<-function(toot_data, emotion) {
   
   #need to group all rows together and seperate into just word data then group them by different sentiments, count how many sentiments for each and display these
   #1. combine the text rows into single string
-  toot_data <- read.csv("../data/toots.csv")
+  toot_data <- read.csv("../data/toots.csv", colClasses = c("id" = "character")) 
   
   #code from gemini to rejumble my code and keep id and created_at
   word_data <- toot_data %>%
@@ -53,15 +53,17 @@ word_analysis<-function(toot_data, emotion) {
     filter(sentiment != ("negative")) 
   #join words with lexicon using inner join
   words_with_sentiment <- inner_join(word_data, nrc_lexicon, by = "word") %>% 
-    filter(sentiment == emotion)
+    filter(sentiment == "joy")
   
-  word_data <- head(words_with_sentiment, 10)
+  word_data <- tail(words_with_sentiment %>% arrange(desc(id)), 9)
   print(word_data)
+ 
   
   emotion_words_count <- words_with_sentiment %>%
-    group_by(word, sentiment) %>% 
-    count(sort=TRUE)
-    print(emotion_words_count)
+   group_by(word, sentiment) %>% 
+    count(sort=TRUE) %>% 
+    head(10)
+   print(emotion_words_count)
   
   
     return(word_data)
