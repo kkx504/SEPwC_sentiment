@@ -28,6 +28,8 @@ load_data<-function(filename, stringAsfunction = FALSE) { #we need this to do st
   return(data)
 }
 
+user_input <- readline("Enter something: ")
+print(paste("You entered:", user_input))
 
 
 word_analysis<-function(toot_data, emotion) {
@@ -47,25 +49,18 @@ word_analysis<-function(toot_data, emotion) {
   clean_words <- str_to_lower(clean_words)
   #4. use nrs lexicon - need to cite
   nrc_lexicon <- get_sentiments("nrc") %>% 
-  filter(sentiment != ("positive")) %>% #we only want emotions
-  filter(sentiment != ("negative"))
-  print(nrc_lexicon)
-
+    filter(sentiment != ("positive")) %>% #we only want emotions
+    filter(sentiment != ("negative")) 
   #join words with lexicon using inner join
-  words_with_sentiment <- inner_join(tibble(word = clean_words), nrc_lexicon, by = "word") #need to use tibble because inner join only used dataframes and we are using a string at the moment
-  print(words_with_sentiment)
-  #group by sentiment #from gemini
-  top_words <- toot_data %>% 
-    select(id, created_at, content) %>% # added id and created_at
-    inner_join(words_with_sentiment, by = c("content" = "word")) %>% #join
-    filter(sentiment == as.character(emotion)) %>%
-    group_by(word, id, created_at) %>% #added id and created at
-    count(sort = TRUE) %>%
-    slice_max(n = 10, order_by = n) %>%
-    ungroup()
+  words_with_sentiment <- inner_join(tibble(word = clean_words), nrc_lexicon, by = "word")  #need to use tibble because inner join only used dataframes and we are using a string at the moment
+    print(words_with_sentiment)
     
+  emotion_words <- words_with_sentiment %>%
+      filter(sentiment == emotion) %>%
+      count(word, sort = TRUE)
+  print(emotion_words)
 
-    return()
+    return(emotion_words)
 }
 
 sentiment_analysis<-function(toot_data) {
