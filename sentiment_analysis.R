@@ -52,12 +52,12 @@ word_analysis<-function(toot_data, emotion) {
     filter(sentiment != ("positive")) %>% #we only want emotions
     filter(sentiment != ("negative")) 
   #join words with lexicon using inner join
-  words_with_sentiment <- inner_join(word_data, nrc_lexicon, by = "word") %>% 
-    filter(sentiment == "joy")
+  words_with_sentiment <- inner_join(word_data, nrc_lexicon, by = "word", relationship = "many-to-many") %>% 
+    filter(sentiment == emotion)
   
-  word_data <- tail(words_with_sentiment %>% arrange(desc(id)), 9)
+  word_data <- tail(words_with_sentiment %>% arrange(desc(id)), 9) #9 because the bottom 9 have those ids
   print(word_data)
- 
+
   
   emotion_words_count <- words_with_sentiment %>%
    group_by(word, sentiment) %>% 
