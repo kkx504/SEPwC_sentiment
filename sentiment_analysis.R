@@ -33,7 +33,7 @@ load_data<-function(filename, stringAsfunction = FALSE) { #we need this to do st
 word_analysis<-function(toot_data, emotion) {
   library(tidyverse)
   library(textdata)
-  #want to create columns called sentiment and word
+
   
   #need to group all rows together and seperate into just word data then group them by different sentiments, count how many sentiments for each and display these
   #1. combine the text rows into single string
@@ -45,24 +45,26 @@ word_analysis<-function(toot_data, emotion) {
     select(id, created_at, word) %>% # Keep id and created_at
     mutate(word = str_remove_all(word, "[[:punct:]]")) %>%
     mutate(word = str_to_lower(word)) %>%
-    filter(word != "")
+    filter(word != "") 
   
   #4. use nrs lexicon - need to cite
   nrc_lexicon <- get_sentiments("nrc") %>% 
     filter(sentiment != ("positive")) %>% #we only want emotions
     filter(sentiment != ("negative")) 
   #join words with lexicon using inner join
-  words_with_sentiment <- inner_join(word_data, nrc_lexicon, by = "word")  #need to use tibble because inner join only used dataframes and we are using a string at the moment
+  words_with_sentiment <- inner_join(word_data, nrc_lexicon, by = "word") %>% 
+    filter(sentiment == emotion)
+  
+  word_data <- head(words_with_sentiment, 10)
+  print(word_data)
+  
+  emotion_words_count <- words_with_sentiment %>%
+    group_by(word, sentiment) %>% 
+    count(sort=TRUE)
+    print(emotion_words_count)
   
   
-  emotion_words <- words_with_sentiment %>%
-    filter(sentiment == emotion) %>%
-    group_by(id, created_at, word, sentiment)
-    
-    print(emotion_words)
-  
-  
-    return(emotion_words)
+    return(word_data)
 }
 
 sentiment_analysis<-function(toot_data) {
