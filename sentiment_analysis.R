@@ -27,6 +27,7 @@ load_data<-function(filename, stringAsfunction = FALSE) { #we need this to do st
   #ensuring id column is character class
   data$id <- as.character(data$id) #as.character turns it into character vector
     
+  print("Data successfully loaded")
   return(data)
 }
 
@@ -42,16 +43,19 @@ word_analysis<-function(toot_data, emotion) {
     unnest_tokens(word, content) %>% #splitting content column into words
     select(id, created_at, word) %>% # Keep id and created_at
     filter(word != "") 
+  print("Content ready for analysis")
   
   #using NRS lexicon: Mohammed, Saif M; Turney, Peter; 2011; http://saifmohammad.com/WebPages/NRC-Emotion-Lexicon.htm
   nrc_lexicon <- get_sentiments("nrc") %>% 
     filter(sentiment != ("positive")) %>% #we only want emotions
     filter(sentiment != ("negative")) 
+  print("NRS lexicon sorted for emotions")
+  
   #join words with lexicon using inner join
   words_with_sentiment <- inner_join(word_data, nrc_lexicon, by = "word", relationship = "many-to-many") %>% #joining my word column with the lexicon
     filter(sentiment == emotion)
   
-  word_data <- tail(words_with_sentiment %>% arrange(desc(id)), 9) #9 because the bottom 9 have those ids
+  word_data <- tail(words_with_sentiment %>% arrange(desc(id)), 9) #9 because the bottom 9 have the desired IDs
   
     return(word_data)
 }
