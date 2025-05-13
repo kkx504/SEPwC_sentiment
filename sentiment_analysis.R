@@ -36,17 +36,11 @@ word_analysis<-function(toot_data, emotion) {
   library(tidyverse)
   library(textdata)
 
+  toot_data <- read.csv("../data/toots.csv", colClasses = c("id" = "character"))  #making sure content of id is read as a character
   
-  #need to group all rows together and seperate into just word data then group them by different sentiments, count how many sentiments for each and display these
-  #1. combine the text rows into single string
-  toot_data <- read.csv("../data/toots.csv", colClasses = c("id" = "character")) 
-  
-  #code from gemini to rejumble my code and keep id and created_at
-  word_data <- toot_data %>%
-    unnest_tokens(word, content) %>%
+  word_data <- toot_data %>% #layout from gemini
+    unnest_tokens(word, content) %>% #splitting content column into words
     select(id, created_at, word) %>% # Keep id and created_at
-    mutate(word = str_remove_all(word, "[[:punct:]]")) %>%
-    mutate(word = str_to_lower(word)) %>%
     filter(word != "") 
   
   #4. use nrs lexicon - need to cite
@@ -58,7 +52,7 @@ word_analysis<-function(toot_data, emotion) {
     filter(sentiment == emotion)
   
   word_data <- tail(words_with_sentiment %>% arrange(desc(id)), 9) #9 because the bottom 9 have those ids
-  print(word_data)
+  #print(word_data)
 
   
   #emotion_words_count <- words_with_sentiment %>%
