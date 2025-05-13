@@ -43,28 +43,25 @@ word_analysis<-function(toot_data, emotion) {
     select(id, created_at, word) %>% # Keep id and created_at
     filter(word != "") 
   
-  #4. use nrs lexicon - need to cite
+  #using NRS lexicon: Mohammed, Saif M; Turney, Peter; 2011; http://saifmohammad.com/WebPages/NRC-Emotion-Lexicon.htm
   nrc_lexicon <- get_sentiments("nrc") %>% 
     filter(sentiment != ("positive")) %>% #we only want emotions
     filter(sentiment != ("negative")) 
   #join words with lexicon using inner join
-  words_with_sentiment <- inner_join(word_data, nrc_lexicon, by = "word", relationship = "many-to-many") %>% 
+  words_with_sentiment <- inner_join(word_data, nrc_lexicon, by = "word", relationship = "many-to-many") %>% #joining my word column with the lexicon
     filter(sentiment == emotion)
   
   word_data <- tail(words_with_sentiment %>% arrange(desc(id)), 9) #9 because the bottom 9 have those ids
-  #print(word_data)
-
-  
-  #emotion_words_count <- words_with_sentiment %>%
-   #group_by(word, sentiment) %>% 
-    #count(sort=TRUE) %>% 
-    #head(10)
-   #print(emotion_words_count)
-  
   
     return(word_data)
 }
 
+
+#emotion_words_count <- words_with_sentiment %>%
+   #group_by(word, sentiment) %>% 
+    #count(sort=TRUE) %>% 
+    #head(10)
+   #print(emotion_words_count)
 sentiment_analysis<-function(toot_data) {
 
     return()
