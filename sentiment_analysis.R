@@ -1,11 +1,13 @@
 suppressPackageStartupMessages({
-library(sentimentr)
-library(tidytext)
-library(lubridate)
-library(dplyr)
-library(tidyr)
-library(argparse)
-library(ggpubr)
+  suppressWarnings(library(sentimentr))
+  suppressWarnings(library(tidytext))
+  suppressWarnings(library(lubridate))
+  suppressWarnings(library(dplyr))
+  suppressWarnings(library(tidyr))
+  suppressWarnings(library(argparse))
+  suppressWarnings(library(ggpubr))
+  suppressWarnings(library(tidyverse))
+  suppressWarnings(library(textdata))
 })
 
 load_data<-function(filename, stringAsfunction = FALSE) { #we need this to do string manipulation
