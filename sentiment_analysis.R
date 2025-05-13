@@ -61,11 +61,11 @@ word_analysis<-function(toot_data, emotion) {
   print(word_data)
 
   
-  emotion_words_count <- words_with_sentiment %>%
-   group_by(word, sentiment) %>% 
-    count(sort=TRUE) %>% 
-    head(10)
-   print(emotion_words_count)
+  #emotion_words_count <- words_with_sentiment %>%
+   #group_by(word, sentiment) %>% 
+    #count(sort=TRUE) %>% 
+    #head(10)
+   #print(emotion_words_count)
   
   
     return(word_data)
