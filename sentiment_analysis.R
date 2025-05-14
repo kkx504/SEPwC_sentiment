@@ -10,9 +10,11 @@ suppressPackageStartupMessages({
   suppressWarnings(library(textdata))
 })
 
-load_data<-function(filename, stringAsfunction = FALSE) { #we need this to do string manipulation
+load_data<-function(filename, stringAsfunction = FALSE, verbose = FALSE) { #we need this to do string manipulation
+  if (verbose) message("Reading data...")
   data <- read.csv("../data/toots.csv") 
   
+  if (verbose) message("Cleaning data...")
   #need to remove any html
   data <- data %>% 
     mutate_if(is.character, ~gsub("<[^>]+>", " ", .)) %>% #we use an anonymous function to ensure the code passes through each element, . represents the current thing being operated on
@@ -27,7 +29,7 @@ load_data<-function(filename, stringAsfunction = FALSE) { #we need this to do st
   #ensuring id column is character class
   data$id <- as.character(data$id) #as.character turns it into character vector
     
-  print("Data successfully loaded")
+  if (verbose) message("Data successfully loaded and cleaned")
   return(data)
 }
 
@@ -39,11 +41,11 @@ word_analysis<-function(toot_data, emotion) {
 
   toot_data <- read.csv("../data/toots.csv", colClasses = c("id" = "character"))  #making sure content of id is read as a character
   
+  if (verbose) message("Analysing data for ", emotion)
   word_data <- toot_data %>% #layout from gemini
     unnest_tokens(word, content) %>% #splitting content column into words
     select(id, created_at, word) %>% # Keep id and created_at
     filter(word != "") 
-  print("Content ready for analysis")
   
   #using NRS lexicon: Mohammed, Saif M; Turney, Peter; 2011; http://saifmohammad.com/WebPages/NRC-Emotion-Lexicon.htm
   nrc_lexicon <- get_sentiments("nrc") %>% 
@@ -57,6 +59,7 @@ word_analysis<-function(toot_data, emotion) {
   
   word_data <- tail(words_with_sentiment %>% arrange(desc(id)), 9) #9 because the bottom 9 have the desired IDs
   
+  if (verbose) message("word_analysis complete.")
     return(word_data)
 }
 
@@ -66,8 +69,16 @@ word_analysis<-function(toot_data, emotion) {
     #count(sort=TRUE) %>% 
     #head(10)
    #print(emotion_words_count)
+
 sentiment_analysis<-function(toot_data) {
 
+  #Take the output of loaded data as input
+  #Perform sentiment analysis with the three methods
+  #Return a data structure with atleast ID, method, created_at and sentiment
+  #Method column to identify which of the three methods was used for each sentiment score
+  #Only return these three and all should be present
+  #The function should preserve the IDs and the unique IDs in the output should match th IDS
+  
     return()
 
 }
