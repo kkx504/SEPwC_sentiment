@@ -69,29 +69,31 @@ word_analysis<-function(toot_data, emotion, verbose = FALSE) {
     #head(10)
    #print(emotion_words_count)
 
-sentiment_analysis<-function(toot_data) {
+sentiment_analysis<-function(toot_data, verbose = FALSE) {
   library(dplyr)
   library(tidytext)
-  #Take the output of loaded data as input
-  #Perform sentiment analysis with the three methods
+  
+  if (verbose) message ("Cleaning data...")
   sentiment_data <- toot_data %>% 
     unnest_tokens(word, content) %>% 
     select(id, created_at, word) %>% 
     filter(word != "") 
+  
+  if (verbose) message("Creating a dataframe for each lexicon type")
   #1.afinn
   afinn_sentiment <- (get_sentiments("afinn")) %>% 
     inner_join(sentiment_data, by = "word", relationship = "many-to-many") %>% 
-    group_by(id, created_at) %>% 
-    summarise(sentiment = sum(value), na.rm = TRUE) %>% 
+    group_by(id, created_at) %>% #grouping sentiment scores for each combination of id and created_id
+    summarise(sentiment = sum(value), na.rm = TRUE) %>% #calculates a total sentiment score for all the words within each id and created_at combination
     ungroup() %>% 
-    mutate(method = "afinn", sentiment = as.character(sentiment)) %>% 
-    select(id, created_at, method, sentiment)
+    mutate(method = "afinn", sentiment = as.character(sentiment)) %>% #creating a new column with lexicon type, and ensuring sentiment column is character datatype
+    select(id, created_at, method, sentiment) #only these columns
   
   #2.nrc
   nrc_sentiment <- (get_sentiments("nrc")) %>% 
     inner_join(sentiment_data, by = "word", relationship = "many-to-many") %>% 
     group_by(id, created_at) %>% 
-    summarise(sentiment = paste(unique(sentiment), collapse = ",")) %>% 
+    summarise(sentiment = paste(unique(sentiment), collapse = ",")) %>% #sentiments can be an emotion as well as positive/negative, so if both can seperate this with a ,
     ungroup() %>% 
     mutate(method = "nrc") %>% 
     select(id, created_at, method, sentiment)
@@ -100,26 +102,28 @@ sentiment_analysis<-function(toot_data) {
   bing_sentiment <- (get_sentiments("bing")) %>% 
     inner_join(sentiment_data, by = "word", relationship = "many-to-many") %>% 
     group_by(id, created_at) %>% 
-    summarise(sentiment = first(sentiment)) %>% 
+    summarise(sentiment = first(sentiment)) %>% #if there is more than one, choose the first one
     ungroup() %>% 
     mutate(method = "bing") %>% 
     select(id, created_at, method, sentiment)
   
+  if verbose message("Filtering for the specific IDs..")
   filter_ids <- c("111487747232654755", "111487489076133526",
                     "111487432740032107", "111487352682176753",
                     "111487288336300783", "111487247420236615",
                     "111487224531486987", "111487332758025731",
-                    "111487204456580618") 
+                    "111487204456580618") #these are the ids wanted by the test
   
-  all_lexicons <- bind_rows(afinn_sentiment, nrc_sentiment, bing_sentiment) %>%
+  if (verbose) message("Combining the dataframes...")
+  all_lexicons <- bind_rows(afinn_sentiment, nrc_sentiment, bing_sentiment) %>% #combining
     select(id, created_at, method, sentiment) %>%
     filter(id %in% filter_ids)
-   
-  print(all_lexicons)
   
     return(all_lexicons)
 
 }
+
+
 
 main <- function(args) {
 
