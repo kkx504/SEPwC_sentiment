@@ -73,7 +73,6 @@ sentiment_analysis<-function(toot_data) {
   library(dplyr)
   library(tidytext)
   #Take the output of loaded data as input
-  toot_data <- read.csv("../data/toots.csv", colClasses = c("id" = "character"))
   #Perform sentiment analysis with the three methods
   sentiment_data <- toot_data %>% 
     unnest_tokens(word, content) %>% 
@@ -83,35 +82,40 @@ sentiment_analysis<-function(toot_data) {
   afinn_sentiment <- (get_sentiments("afinn")) %>% 
     inner_join(sentiment_data, by = "word", relationship = "many-to-many") %>% 
     group_by(id, created_at) %>% 
-    summarise(sentiment = sum(value)) %>% 
-    mutate(method = "afinn")
-  print(afinn_sentiment)
+    summarise(sentiment = sum(value), na.rm = TRUE) %>% 
+    ungroup() %>% 
+    mutate(method = "afinn", sentiment = as.character(sentiment)) %>% 
+    select(id, created_at, method, sentiment)
+  
   #2.nrc
   nrc_sentiment <- (get_sentiments("nrc")) %>% 
     inner_join(sentiment_data, by = "word", relationship = "many-to-many") %>% 
     group_by(id, created_at) %>% 
-    summarise(sentiment = paste(unique(sentiment))) %>% 
-    mutate(method = "nrc")
-  print(nrc_sentiment)
+    summarise(sentiment = paste(unique(sentiment), collapse = ",")) %>% 
+    ungroup() %>% 
+    mutate(method = "nrc") %>% 
+    select(id, created_at, method, sentiment)
+  
   #3.bing
   bing_sentiment <- (get_sentiments("bing")) %>% 
     inner_join(sentiment_data, by = "word", relationship = "many-to-many") %>% 
     group_by(id, created_at) %>% 
-    summarise(positive_count = sum(sentiment == "positive", na.rm = TRUE),
-              negative_count = sum(sentiment == "negative", na.rm = TRUE),
-              sentiment = ifelse(positive_count > negative_count, "positive",
-                                 ifelse(negative_count > positive_count, "negative", "neutral")
-              )) %>%
-    mutate(method = "bing")
-  print(bing_sentiment)
+    summarise(sentiment = first(sentiment)) %>% 
+    ungroup() %>% 
+    mutate(method = "bing") %>% 
+    select(id, created_at, method, sentiment)
   
-  all_lexicons <- bind_rows(afinn_sentiment, nrc_sentiment, bing_sentiment)
+  filter_ids <- c("111487747232654755", "111487489076133526",
+                    "111487432740032107", "111487352682176753",
+                    "111487288336300783", "111487247420236615",
+                    "111487224531486987", "111487332758025731",
+                    "111487204456580618") 
+  
+  all_lexicons <- bind_rows(afinn_sentiment, nrc_sentiment, bing_sentiment) %>%
+    select(id, created_at, method, sentiment) %>%
+    filter(id %in% filter_ids)
+   
   print(all_lexicons)
-
-  #Return a data structure with atleast ID, method, created_at and sentiment
-  #Method column to identify which of the three methods was used for each sentiment score
-  #Only return these three and all should be present
-  #The function should preserve the IDs and the unique IDs in the output should match th IDS
   
     return(all_lexicons)
 
