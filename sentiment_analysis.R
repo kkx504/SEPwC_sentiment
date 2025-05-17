@@ -1,8 +1,8 @@
 suppressPackageStartupMessages({
+  suppressWarnings(library(dplyr))
   suppressWarnings(library(sentimentr))
   suppressWarnings(library(tidytext))
   suppressWarnings(library(lubridate))
-  suppressWarnings(library(dplyr))
   suppressWarnings(library(tidyr))
   suppressWarnings(library(argparse))
   suppressWarnings(library(ggpubr))
@@ -35,23 +35,22 @@ load_data<-function(filename, stringAsfunction = FALSE, verbose = FALSE) { #we n
 
 
 
-word_analysis<-function(toot_data, emotion) {
+word_analysis<-function(toot_data, emotion, verbose = FALSE) {
   library(tidyverse)
   library(textdata)
 
   toot_data <- read.csv("../data/toots.csv", colClasses = c("id" = "character"))  #making sure content of id is read as a character
-  
+ 
   if (verbose) message("Analysing data for ", emotion)
   word_data <- toot_data %>% #layout from gemini
     unnest_tokens(word, content) %>% #splitting content column into words
     select(id, created_at, word) %>% # Keep id and created_at
     filter(word != "") 
   
-  #using NRS lexicon: Mohammed, Saif M; Turney, Peter; 2011; http://saifmohammad.com/WebPages/NRC-Emotion-Lexicon.htm
+  #using NRC lexicon: Mohammed, Saif M; Turney, Peter; 2011; http://saifmohammad.com/WebPages/NRC-Emotion-Lexicon.htm
   nrc_lexicon <- get_sentiments("nrc") %>% 
     filter(sentiment != ("positive")) %>% #we only want emotions
     filter(sentiment != ("negative")) 
-  print("NRS lexicon sorted for emotions")
   
   #join words with lexicon using inner join
   words_with_sentiment <- inner_join(word_data, nrc_lexicon, by = "word", relationship = "many-to-many") %>% #joining my word column with the lexicon
@@ -71,15 +70,50 @@ word_analysis<-function(toot_data, emotion) {
    #print(emotion_words_count)
 
 sentiment_analysis<-function(toot_data) {
-
+  library(dplyr)
+  library(tidytext)
   #Take the output of loaded data as input
+  toot_data <- read.csv("../data/toots.csv", colClasses = c("id" = "character"))
   #Perform sentiment analysis with the three methods
+  sentiment_data <- toot_data %>% 
+    unnest_tokens(word, content) %>% 
+    select(id, created_at, word) %>% 
+    filter(word != "") 
+  #1.afinn
+  afinn_sentiment <- (get_sentiments("afinn")) %>% 
+    inner_join(sentiment_data, by = "word", relationship = "many-to-many") %>% 
+    group_by(id, created_at) %>% 
+    summarise(sentiment = sum(value)) %>% 
+    mutate(method = "afinn")
+  print(afinn_sentiment)
+  #2.nrc
+  nrc_sentiment <- (get_sentiments("nrc")) %>% 
+    inner_join(sentiment_data, by = "word", relationship = "many-to-many") %>% 
+    group_by(id, created_at) %>% 
+    summarise(sentiment = paste(unique(sentiment))) %>% 
+    mutate(method = "nrc")
+  print(nrc_sentiment)
+  #3.bing
+  bing_sentiment <- (get_sentiments("bing")) %>% 
+    inner_join(sentiment_data, by = "word", relationship = "many-to-many") %>% 
+    group_by(id, created_at) %>% 
+    summarise(positive_count = sum(sentiment == "positive", na.rm = TRUE),
+              negative_count = sum(sentiment == "negative", na.rm = TRUE),
+              sentiment = ifelse(positive_count > negative_count, "positive",
+                                 ifelse(negative_count > positive_count, "negative", "neutral")
+              )) %>%
+    mutate(method = "bing")
+  print(bing_sentiment)
+  
+  all_lexicons <- bind_rows(afinn_sentiment, nrc_sentiment, bing_sentiment)
+  print(all_lexicons)
+
   #Return a data structure with atleast ID, method, created_at and sentiment
   #Method column to identify which of the three methods was used for each sentiment score
   #Only return these three and all should be present
   #The function should preserve the IDs and the unique IDs in the output should match th IDS
   
-    return()
+    return(all_lexicons)
 
 }
 
