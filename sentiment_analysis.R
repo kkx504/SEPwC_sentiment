@@ -58,6 +58,13 @@ word_analysis<-function(toot_data, emotion, verbose = FALSE) {
   words_with_sentiment <- inner_join(word_data, nrc_lexicon, by = "word", relationship = "many-to-many") %>% #joining my word column with the lexicon
     filter(sentiment == emotion)  
   
+  emotion_words_count <- words_with_sentiment %>%
+   group_by(word, sentiment) %>% 
+    count(sort=TRUE) %>% 
+    head(10) %>% 
+    select(word, n, sentiment)
+   print(emotion_words_count)
+  
   word_data <- tail(words_with_sentiment %>% arrange(desc(id)), 9) #9 because the bottom 9 have the desired IDs
   
   if (verbose) message("word_analysis complete.")
@@ -65,11 +72,7 @@ word_analysis<-function(toot_data, emotion, verbose = FALSE) {
 }
 
 
-#emotion_words_count <- words_with_sentiment %>%
-   #group_by(word, sentiment) %>% 
-    #count(sort=TRUE) %>% 
-    #head(10)
-   #print(emotion_words_count)
+
 
 sentiment_analysis<-function(toot_data, verbose = FALSE) {
   library(dplyr)
@@ -140,16 +143,23 @@ main <- function(args) {
 
   #1.load the data
   data_file <- file.path(getwd(), args$filename)
+  if (args$verbose) message("Loading data from: ", data_file)
   toot_data <- load_data(data_file)
   
   #2.perform word_analysis for specified emotion 
-  word_results <- word_analysis(toot_data, args$emotion)
+  if (args$verbose) message("Analysing for the emotion: ", args$emotion)
+  word_results <- word_analysis(toot_data, args$emotion) 
+
+  if (args$verbose) message("Word Analysis complete")
+ 
   
   #3.potentially sentiment analysis
+  if (args$verbose) message("Carrying out sentiment analysis")
   sentiment_results <- sentiment_analysis(toot_data)
   
   #4.saves it as plot and generated a pdf
   if (!is.null(args$plot)) {
+    if (args$verbose) message("Generating sentiment plot...")
     # Convert sentiment to numeric for afinn and bing, handle nrc separately
     sentiment_results <- sentiment_results %>% #from gemini
       mutate(sentiment_display = case_when(
@@ -165,8 +175,14 @@ main <- function(args) {
     facet_wrap( ~ method, scales = "free_y")
     
     ggsave(filename = as.character(args$plot), plot = g, width = 10, height = 6)
+    
+    if (args$verbose) message("Plot saved")
+  } else {
+    if (args$verbose) message("Plotting argument not provided, skipping...")
   }
+  if (args$verbose) message("Main analysis finished")
 }
+
 
 
 if(sys.nframe() == 0) {
