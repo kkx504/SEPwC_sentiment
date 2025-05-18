@@ -63,7 +63,12 @@ word_analysis<-function(toot_data, emotion, verbose = FALSE) {
     count(sort=TRUE) %>% 
     head(10) %>% 
     select(word, n, sentiment)
-   print(emotion_words_count)
+  
+  #ensuring that this print statement will only print when code is ran directly, not through test environment
+  if (Sys.getenv("NOT_CRAN") == "") { #as testthat uses this environment variable. If this ISNT true it can print
+    print(emotion_words_count)
+  }
+   
   
   word_data <- tail(words_with_sentiment %>% arrange(desc(id)), 9) #9 because the bottom 9 have the desired IDs
   
