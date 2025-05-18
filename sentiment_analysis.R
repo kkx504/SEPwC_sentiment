@@ -140,6 +140,10 @@ main <- function(args) {
   library(argparse)
   library(ggplot2)
 
+  if (is.null(args$verbose)) { #checking for the verbose argument
+    args$verbose <- FALSE
+  }
+
   #1.load the data
   data_file <- file.path(getwd(), args$filename) #ensuring we can access file no matter what directory we are in
   if (args$verbose) message("Loading data from: ", data_file)
