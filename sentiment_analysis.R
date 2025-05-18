@@ -30,7 +30,7 @@ load_data<-function(filename, stringAsfunction = FALSE, verbose = FALSE) { #we n
 
   #ensuring id column is character class
   data$id <- as.character(data$id) #as.character turns it into character vector
-    
+  
   if (verbose) message("Data successfully loaded and cleaned")
   return(data)
 }
@@ -60,10 +60,6 @@ word_analysis<-function(toot_data, emotion, verbose = FALSE) {
   
   word_data <- tail(words_with_sentiment %>% arrange(desc(id)), 9) #9 because the bottom 9 have the desired IDs
   
-  #word_data <- words_with_sentiment %>% 
-   # arrange(desc(id))
-  
-  print(word_data)
   if (verbose) message("word_analysis complete.")
   return(word_data)
 }
@@ -124,6 +120,12 @@ sentiment_analysis<-function(toot_data, verbose = FALSE) {
   all_lexicons <- bind_rows(afinn_sentiment, nrc_sentiment, bing_sentiment) %>% #combining
     select(id, created_at, method, sentiment) %>%
     filter(id %in% filter_ids)
+  
+  #code from gemini to make sure the ids are in the order the tests want
+  all_lexicons <- all_lexicons %>%
+    mutate(id = factor(id, levels = filter_ids)) %>%
+    arrange(id) %>%
+    mutate(id = as.character(id))
   
     return(all_lexicons)
 }
