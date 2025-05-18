@@ -10,9 +10,11 @@ suppressPackageStartupMessages({
   suppressWarnings(library(textdata))
 })
 
+options(python_cmd = "C:/Users/Izzy/AppData/Local/Programs/Python/Python313/python.exe")
+
 load_data<-function(filename, stringAsfunction = FALSE, verbose = FALSE) { #we need this to do string manipulation
   if (verbose) message("Reading data...")
-  data <- read.csv("../data/toots.csv") 
+  data <- read.csv(filename, colClasses = c("id" = "character")) 
   
   if (verbose) message("Cleaning data...")
   #need to remove any html
@@ -38,9 +40,9 @@ load_data<-function(filename, stringAsfunction = FALSE, verbose = FALSE) { #we n
 word_analysis<-function(toot_data, emotion, verbose = FALSE) {
   library(tidyverse)
   library(textdata)
-
-  toot_data <- read.csv("../data/toots.csv", colClasses = c("id" = "character"))  #making sure content of id is read as a character
  
+  #toot_data <- read.csv("../data/toots.csv", colClasses = c("id" = "character"))  #making sure content of id is read as a character
+  
   if (verbose) message("Analysing data for ", emotion)
   word_data <- toot_data %>% #layout from gemini
     unnest_tokens(word, content) %>% #splitting content column into words
@@ -51,15 +53,19 @@ word_analysis<-function(toot_data, emotion, verbose = FALSE) {
   nrc_lexicon <- get_sentiments("nrc") %>% 
     filter(sentiment != ("positive")) %>% #we only want emotions
     filter(sentiment != ("negative")) 
-  
+ 
   #join words with lexicon using inner join
   words_with_sentiment <- inner_join(word_data, nrc_lexicon, by = "word", relationship = "many-to-many") %>% #joining my word column with the lexicon
-    filter(sentiment == emotion)
+    filter(sentiment == emotion)  
   
   word_data <- tail(words_with_sentiment %>% arrange(desc(id)), 9) #9 because the bottom 9 have the desired IDs
   
+  #word_data <- words_with_sentiment %>% 
+   # arrange(desc(id))
+  
+  print(word_data)
   if (verbose) message("word_analysis complete.")
-    return(word_data)
+  return(word_data)
 }
 
 
@@ -107,7 +113,7 @@ sentiment_analysis<-function(toot_data, verbose = FALSE) {
     mutate(method = "bing") %>% 
     select(id, created_at, method, sentiment)
   
-  if verbose message("Filtering for the specific IDs..")
+  if (verbose) message("Filtering for the specific IDs..")
   filter_ids <- c("111487747232654755", "111487489076133526",
                     "111487432740032107", "111487352682176753",
                     "111487288336300783", "111487247420236615",
@@ -120,13 +126,23 @@ sentiment_analysis<-function(toot_data, verbose = FALSE) {
     filter(id %in% filter_ids)
   
     return(all_lexicons)
-
 }
 
 
 
 main <- function(args) {
-
+  
+  library(argparse)
+  #1.load the data
+  data_file <- file.path(getwd(), args$filename)
+  toot_data <- load_data(data_file)
+  
+  #2.perform word_analysis for specified emotion 
+  word_results <- word_analysis(toot_data, args$emotion)
+  print(head(word_results))
+  #3.potentially sentiment analysis
+  #4.saves it as plot and generated a pdf
+  #5.ensures plot isnt empty
 }
 
 
@@ -148,6 +164,6 @@ if(sys.nframe() == 0) {
   parser$add_argument('-p', '--plot',
                     help="Plot something. Give the filename")
   
-  args = parser$parse_args()  
-  main(args)
+  parsed_args = parser$parse_args()  
+  main(parsed_args)
 }
