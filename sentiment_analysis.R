@@ -149,22 +149,23 @@ main <- function(args) {
   sentiment_results <- sentiment_analysis(toot_data)
   
   #4.saves it as plot and generated a pdf
-  if (!is.null(args$output)) {
+  if (!is.null(args$plot)) {
     # Convert sentiment to numeric for afinn and bing, handle nrc separately
-    sentiment_results <- sentiment_results %>%
-      mutate(sentiment = case_when(
-        method %in% c("afinn", "bing") ~ as.character(as.numeric(sentiment)),
-        method == "nrc" ~ as.character(sentiment),
+    sentiment_results <- sentiment_results %>% #from gemini
+      mutate(sentiment_display = case_when(
+        method == "afinn" ~ as.character(as.numeric(suppressWarnings(as.numeric(sentiment)))),
+        method == "bing" ~ as.character(sentiment),
+        method == "nrc" ~ as.character(sentiment)
       ))
-  
-    g <- ggplot(sentiment_results, aes(x = created_at, y = sentiment, color = method)) +
+    
+    
+    g <- ggplot(sentiment_results, aes(x = created_at, y = sentiment_display, color = method)) +
     geom_point() +
     labs(x = "Time at which toot was created", y = "Sentiment", title = "Sentiment analysis for toots", color = "lexicon") +
     facet_wrap( ~ method, scales = "free_y")
     
-    ggsave(filename = as.character(args$output), plot = g, width = 10, height = 6)
+    ggsave(filename = as.character(args$plot), plot = g, width = 10, height = 6)
   }
-  #5.ensures plot isnt empty
 }
 
 
