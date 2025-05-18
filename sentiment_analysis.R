@@ -139,10 +139,9 @@ main <- function(args) {
   
   library(argparse)
   library(ggplot2)
-  library(dplyr)
 
   #1.load the data
-  data_file <- file.path(getwd(), args$filename)
+  data_file <- file.path(getwd(), args$filename) #ensuring we can access file no matter what directory we are in
   if (args$verbose) message("Loading data from: ", data_file)
   toot_data <- load_data(data_file)
   
@@ -152,31 +151,30 @@ main <- function(args) {
 
   if (args$verbose) message("Word Analysis complete")
  
-  
   #3.potentially sentiment analysis
   if (args$verbose) message("Carrying out sentiment analysis")
   sentiment_results <- sentiment_analysis(toot_data)
   
-  #4.saves it as plot and generated a pdf
-  if (!is.null(args$plot)) {
+  #4.generating a plot
+  if (!is.null(args$plot)) { #checking for the plot argument
     if (args$verbose) message("Generating sentiment plot...")
-    # Convert sentiment to numeric for afinn and bing, handle nrc separately
-    sentiment_results <- sentiment_results %>% #from gemini
+    
+    sentiment_results <- sentiment_results %>% #from gemini (to have a consistent datatype for the y values)
       mutate(sentiment_display = case_when(
         method == "afinn" ~ as.character(as.numeric(suppressWarnings(as.numeric(sentiment)))),
         method == "bing" ~ as.character(sentiment),
         method == "nrc" ~ as.character(sentiment)
       ))
     
-    
     g <- ggplot(sentiment_results, aes(x = created_at, y = sentiment_display, color = method)) +
     geom_point() +
     labs(x = "Time at which toot was created", y = "Sentiment", title = "Sentiment analysis for toots", color = "lexicon") +
-    facet_wrap( ~ method, scales = "free_y")
+    facet_wrap( ~ method, scales = "free_y") #creates a seperate plot for each method, letting the y values be different
     
     ggsave(filename = as.character(args$plot), plot = g, width = 10, height = 6)
     
     if (args$verbose) message("Plot saved")
+    
   } else {
     if (args$verbose) message("Plotting argument not provided, skipping...")
   }
