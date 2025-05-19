@@ -1,3 +1,5 @@
+#Copyright by Isabel Mortley. CC-BY-NC
+
 suppressPackageStartupMessages({
   suppressWarnings(library(dplyr))
   suppressWarnings(library(sentimentr))
@@ -94,7 +96,7 @@ sentiment_analysis <- function(toot_data, verbose = FALSE) {
     filter(word != "")
 
   if (verbose) message("Creating a dataframe for each lexicon type")
-  #1.afinn
+  #1.afinn #using afinn lexicon. Nielson, Finn Aruprup; https://www2.imm.dtu.dk/pubdb/pubs/6010-full.html
   afinn_sentiment <- (get_sentiments("afinn")) %>%
     inner_join(sentiment_data, by = "word", relationship = "many-to-many") %>%
     group_by(id, created_at) %>% #grouping sentiment scores for each combination of id and created_id #nolint: object_usage_linter
@@ -112,7 +114,7 @@ sentiment_analysis <- function(toot_data, verbose = FALSE) {
     mutate(method = "nrc") %>%
     select(id, created_at, method, sentiment) #nolint: object_usage_linter
 
-  #3.bing
+  #3.bing #using bing lexicon. Bing, Liu; Minqing, Hu; https://www.cs.uic.edu/~liub/publications/kdd04-revSummary.pdf
   bing_sentiment <- (get_sentiments("bing")) %>%
     inner_join(sentiment_data, by = "word", relationship = "many-to-many") %>%
     group_by(id, created_at) %>% #nolint: object_usage_linter
