@@ -10,9 +10,12 @@ suppressPackageStartupMessages({
   suppressWarnings(library(ggpubr))
   suppressWarnings(library(tidyverse))
   suppressWarnings(library(textdata))
+  suppressWarnings(library(lintr))
 })
 
-options(python_cmd = "C:/Users/Izzy/AppData/Local/Programs/Python/Python313/python.exe") #nolint: line_length_linter
+#setting the python path so code is able to use python dependencies within packages #nolint start: line_length_linter
+options(python_cmd = "C:/Users/Izzy/AppData/Local/Programs/Python/Python313/python.exe") 
+options(dplyr.summarise.inform = FALSE) #from gemini, to mute unnecessary message about the summarise() function #nolint end: line_length_linter
 
 
 load_data <- function(filename,
@@ -71,7 +74,7 @@ word_analysis <- function(toot_data, emotion, verbose = FALSE) {
     group_by(word, sentiment) %>% #nolint: object_usage_linter
     count(sort = TRUE) %>%
     head(10) %>%
-    select(word, n, sentiment)
+    select(word, n, sentiment) #printing sentiment for user to know
 
   #print statement only  to print when code is ran directly,
   #not through test environment
@@ -163,6 +166,7 @@ main <- function(args) {
     args$verbose <- FALSE
   }
 
+
   #1.load the data, ensuring access from any directory
   data_file <- file.path(getwd(), args$filename)
   if (args$verbose) message("Loading data from: ", data_file)
@@ -228,5 +232,6 @@ if (sys.nframe() == 0) {
                       help = "Plot something. Give the filename")
 
   parsed_args <- parser$parse_args()
+
   main(parsed_args)
 }
