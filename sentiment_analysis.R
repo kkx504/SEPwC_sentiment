@@ -157,6 +157,40 @@ sentiment_analysis <- function(toot_data, verbose = FALSE) {
 
 
 
+wordcloud <- function(toot_data, emotion, wordcloud_filename) {
+
+  #Recalculating words_with_sentiment for full list of word counts for emotion
+  words_for_wordcloud <- toot_data %>%
+    unnest_tokens(word, content) %>% #nolint start: object_user_linter
+    select(id, created_at, word) %>%
+    filter(word != "") #nolint end: object_user_linter
+
+  nrc_lexicon <- get_sentiments("nrc") %>%
+    filter(sentiment != ("positive")) %>%
+    filter(sentiment != ("negative"))
+
+  words_with_sentiment_for_cloud <- inner_join(words_for_wordcloud,
+                                               nrc_lexicon,
+                                               by = "word",
+                                               relationship = "many-to-many") %>% #nolint: line_length_linter
+    filter(sentiment == emotion)
+
+  word_counts_for_cloud <- words_with_sentiment_for_cloud %>%
+    group_by(word) %>% #nolint: object_user linter
+    count(sort = TRUE)
+
+  wc <- wordcloud2(data = word_counts_for_cloud[, c("word", "n")], size = 0.7,
+                   backgroundColor = "white",
+                   color = "green")
+
+  #Saving wordcloud as an HTML file, avoiding pandoc dependency
+  htmlwidgets::saveWidget(wc,
+                          file = wordcloud_filename,
+                          selfcontained = FALSE)
+}
+
+
+
 main <- function(args) {
 
   if (is.null(args$verbose)) { #checking for the verbose argument
@@ -175,45 +209,20 @@ main <- function(args) {
 
   if (args$verbose) message("Word Analysis complete")
 
+
+
   #5.Generating word cloud (extra functionality)
   if (!is.null(args$wordcloud)) {
     if (args$verbose) message("Generating word cloud for emotion: ", args$emotion) #nolint: line_length_linter
 
-    #Recalculating words_with_sentiment for full list of word counts for emotion
-    words_for_wordcloud <- toot_data %>%
-      unnest_tokens(word, content) %>% #nolint start: object_user_linter
-      select(id, created_at, word) %>%
-      filter(word != "") #nolint end: object_user_linter
-
-    nrc_lexicon <- get_sentiments("nrc") %>%
-      filter(sentiment != ("positive")) %>%
-      filter(sentiment != ("negative"))
-
-    words_with_sentiment_for_cloud <- inner_join(words_for_wordcloud,
-                                                 nrc_lexicon,
-                                                 by = "word",
-                                                 relationship = "many-to-many") %>% #nolint: line_length_linter
-      filter(sentiment == args$emotion)
-
-
-    word_counts_for_cloud <- words_with_sentiment_for_cloud %>%
-      group_by(word) %>% #nolint: object_user linter
-      count(sort = TRUE)
-
-    wc <- wordcloud2(data = word_counts_for_cloud[, c("word", "n")], size = 0.7,
-                     backgroundColor = "white",
-                     color = "green")
-
-    #Saving wordcloud as an HTML file, avoiding pandoc dependency
-    htmlwidgets::saveWidget(wc,
-                            file = args$wordcloud,
-                            selfcontained = FALSE)
+    wordcloud(toot_data, args$emotion, args$wordcloud)
 
     if (args$verbose) message("Word cloud saved to ", args$wordcloud)
 
   } else {
     if (args$verbose) message("Word cloud argument not provided, skipping...")
   }
+
 
 
   #3.sentiment analysis
