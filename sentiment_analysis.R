@@ -11,10 +11,14 @@ suppressPackageStartupMessages({
   suppressWarnings(library(tidyverse))
   suppressWarnings(library(textdata))
   suppressWarnings(library(lintr))
+  suppressWarnings(library(ggplot2))
+  suppressWarnings(library(wordcloud2))
+  suppressWarnings(library(htmlwidgets))
 })
 
 #setting the python path so code is able to use python dependencies within packages #nolint start: line_length_linter
 options(python_cmd = "C:/Users/Izzy/AppData/Local/Programs/Python/Python313/python.exe") 
+
 options(dplyr.summarise.inform = FALSE) #from gemini, to mute unnecessary message about the summarise() function #nolint end: line_length_linter
 
 
@@ -24,7 +28,7 @@ load_data <- function(filename,
 
   if (verbose) message("Reading data...")
   data <- read.csv(filename,
-                   colClasses = c("id" = "character")) #id read as a character
+                   colClasses = c("id" = "character"))
 
   if (verbose) message("Cleaning data...")
   #need to remove any html
@@ -36,10 +40,10 @@ load_data <- function(filename,
   data$created_at <- ymd_hms(data$created_at)
 
   #only english language
-  data <- data[data$language == "en", ] #a comma to keep ALL columns but only rows with 'en' #nolint: line_length_linter
+  data <- data[data$language == "en", ] #comma keeps all columns but only rows with 'en' #nolint: line_length_linter
 
   #ensuring id column is character class
-  data$id <- as.character(data$id) #as.character turns it into character vector
+  data$id <- as.character(data$id)
 
   if (verbose) message("Data successfully loaded and cleaned")
   return(data)
@@ -48,13 +52,11 @@ load_data <- function(filename,
 
 
 word_analysis <- function(toot_data, emotion, verbose = FALSE) {
-  library(tidyverse)
-  library(textdata)
 
   if (verbose) message("Analysing data for ", emotion)
   word_data <- toot_data %>% #layout from gemini
-    unnest_tokens(word,content) %>% #splitting content column into words #nolint: object_usage_linter
-    select(id,created_at,word) %>% # Keep id and created_at #nolint: object_usage_linter
+    unnest_tokens(word, content) %>% #splitting content column into words #nolint: object_usage_linter
+    select(id, created_at, word) %>% #Only these columns #nolint: object_usage_linter
     filter(word != "")
 
   #using NRC lexicon: Mohammed, Saif M; Turney, Peter; 2011;
@@ -63,7 +65,7 @@ word_analysis <- function(toot_data, emotion, verbose = FALSE) {
     filter(sentiment != ("positive")) %>% #we only want emotions
     filter(sentiment != ("negative"))
 
-  #join words with lexicon using inner join by my column 'word
+  #join words with lexicon using inner join
   words_with_sentiment <- inner_join(word_data,
                                      nrc_lexicon,
                                      by = "word",
@@ -74,11 +76,10 @@ word_analysis <- function(toot_data, emotion, verbose = FALSE) {
     group_by(word, sentiment) %>% #nolint: object_usage_linter
     count(sort = TRUE) %>%
     head(10) %>%
-    select(word, n, sentiment) #printing sentiment for user to know
+    select(word, n, sentiment)
 
-  #print statement only  to print when code is ran directly,
-  #not through test environment
-  if (Sys.getenv("NOT_CRAN") == "") { #testthat uses this environment variable. If this ISNT true it can print #nolint: line_length_linter
+  #to print only when code is ran directly, not through test environment
+  if (Sys.getenv("NOT_CRAN") == "") { #testthat uses 'this environment variable 'NOT_CRAN'. If this ISNT true it can print #nolint: line_length_linter
     print(emotion_words_count)
   }
 
@@ -91,10 +92,7 @@ word_analysis <- function(toot_data, emotion, verbose = FALSE) {
 
 
 
-
 sentiment_analysis <- function(toot_data, verbose = FALSE) {
-  library(dplyr)
-  library(tidytext)
 
   if (verbose) message("Cleaning data...")
   sentiment_data <- toot_data %>%
@@ -106,29 +104,31 @@ sentiment_analysis <- function(toot_data, verbose = FALSE) {
 
   #1.afinn #using afinn lexicon.Nielson, Finn Aruprup;
   #https://www2.imm.dtu.dk/pubdb/pubs/6010-full.html
+
   afinn_sentiment <- (get_sentiments("afinn")) %>%
     inner_join(sentiment_data, by = "word", relationship = "many-to-many") %>%
     group_by(id, created_at) %>% #grouping sentiment scores for each combination of id and created_id #nolint: object_usage_linter
-    summarise(sentiment = sum(value), na.rm = TRUE, .groups = "drop") %>% #calculates a total sentiment score for all the words within each id and created_at combination #nolint: object_usage_linter
+    summarise(sentiment = sum(value), na.rm = TRUE) %>% #calculates a total sentiment score for all the words within each id and created_at combination #nolint: object_usage_linter
     ungroup() %>%
-    mutate(method = "afinn", sentiment = as.character(sentiment)) %>% #creating a new column with lexicon type, and ensuring sentiment column is character datatype #nolint: line_length_linter
-    select(id, created_at, method, sentiment) #only these columns #nolint: object_usage_linter
+    mutate(method = "afinn", sentiment = as.character(sentiment)) %>% #creating a new column with lexicon type, and is character datatype #nolint: line_length_linter
+    select(id, created_at, method, sentiment) #nolint: object_usage_linter
 
   #2.nrc
   nrc_sentiment <- (get_sentiments("nrc")) %>%
     inner_join(sentiment_data, by = "word", relationship = "many-to-many") %>%
     group_by(id, created_at) %>% #nolint: object_usage_linter
-    summarise(sentiment = paste(unique(sentiment), collapse = ",", .groups = "drop")) %>% #sentiments can be an emotion as well as positive/negative, so if both can seperate this with a , #nolint: line_length_linter
+    summarise(sentiment = paste(unique(sentiment), collapse = ",")) %>% #sentiments can be an emotion as well as positive/negative, so if both can seperate this with a , #nolint: line_length_linter
     ungroup() %>%
     mutate(method = "nrc") %>%
     select(id, created_at, method, sentiment) #nolint: object_usage_linter
 
   #3.bing #using bing lexicon. Bing, Liu; Minqing, Hu;
   #https://www.cs.uic.edu/~liub/publications/kdd04-revSummary.pdf
+
   bing_sentiment <- (get_sentiments("bing")) %>%
     inner_join(sentiment_data, by = "word", relationship = "many-to-many") %>%
     group_by(id, created_at) %>% #nolint: object_usage_linter
-    summarise(sentiment = first(sentiment), .groups = "drop") %>% #if there is more than one, choose the first one #nolint: line_length_linter
+    summarise(sentiment = first(sentiment)) %>% #if there is more than one, choose the first one #nolint: line_length_linter
     ungroup() %>%
     mutate(method = "bing") %>%
     select(id, created_at, method, sentiment) #nolint: object_usage_linter
@@ -138,14 +138,14 @@ sentiment_analysis <- function(toot_data, verbose = FALSE) {
                   "111487432740032107", "111487352682176753",
                   "111487288336300783", "111487247420236615",
                   "111487224531486987", "111487332758025731",
-                  "111487204456580618") #these are the ids wanted by the test
+                  "111487204456580618") #ids wanted by the test
 
   if (verbose) message("Combining the dataframes...")
   all_lexicons <- bind_rows(afinn_sentiment, nrc_sentiment, bing_sentiment) %>%
     select(id, created_at, method, sentiment) %>% #nolint: object_usage_linter
     filter(id %in% filter_ids)
 
-  #code from gemini to make sure the ids are in the order the tests want
+  #code from gemini, making sure the ids are in the order the tests want
   all_lexicons <- all_lexicons %>%
     mutate(id = factor(id, levels = filter_ids)) %>%
     arrange(id) %>%
@@ -159,24 +159,62 @@ sentiment_analysis <- function(toot_data, verbose = FALSE) {
 
 main <- function(args) {
 
-  library(argparse)
-  library(ggplot2)
-
   if (is.null(args$verbose)) { #checking for the verbose argument
     args$verbose <- FALSE
   }
-
 
   #1.load the data, ensuring access from any directory
   data_file <- file.path(getwd(), args$filename)
   if (args$verbose) message("Loading data from: ", data_file)
   toot_data <- load_data(data_file)
+  if (args$verbose) message("Data cleaned and ready for use")
 
   #2.perform word_analysis for specified emotion
   if (args$verbose) message("Analysing for the emotion: ", args$emotion)
   word_analysis(toot_data, args$emotion)
 
   if (args$verbose) message("Word Analysis complete")
+
+  #5.Generating word cloud (extra functionality)
+  if (!is.null(args$wordcloud)) {
+    if (args$verbose) message("Generating word cloud for emotion: ", args$emotion) #nolint: line_length_linter
+
+    #Recalculating words_with_sentiment for full list of word counts for emotion
+    words_for_wordcloud <- toot_data %>%
+      unnest_tokens(word, content) %>% #nolint start: object_user_linter
+      select(id, created_at, word) %>%
+      filter(word != "") #nolint end: object_user_linter
+
+    nrc_lexicon <- get_sentiments("nrc") %>%
+      filter(sentiment != ("positive")) %>%
+      filter(sentiment != ("negative"))
+
+    words_with_sentiment_for_cloud <- inner_join(words_for_wordcloud,
+                                                 nrc_lexicon,
+                                                 by = "word",
+                                                 relationship = "many-to-many") %>% #nolint: line_length_linter
+      filter(sentiment == args$emotion)
+
+
+    word_counts_for_cloud <- words_with_sentiment_for_cloud %>%
+      group_by(word) %>% #nolint: object_user linter
+      count(sort = TRUE)
+
+    wc <- wordcloud2(data = word_counts_for_cloud[, c("word", "n")], size = 0.7,
+                     backgroundColor = "white",
+                     color = "green")
+
+    #Saving wordcloud as an HTML file, avoiding pandoc dependency
+    htmlwidgets::saveWidget(wc,
+                            file = args$wordcloud,
+                            selfcontained = FALSE)
+
+    if (args$verbose) message("Word cloud saved to ", args$wordcloud)
+
+  } else {
+    if (args$verbose) message("Word cloud argument not provided, skipping...")
+  }
+
 
   #3.sentiment analysis
   if (args$verbose) message("Carrying out sentiment analysis")
@@ -208,6 +246,7 @@ main <- function(args) {
   } else {
     if (args$verbose) message("Plotting argument not provided, skipping...")
   }
+
   if (args$verbose) message("Main analysis finished")
 }
 
@@ -229,7 +268,9 @@ if (sys.nframe() == 0) {
                       action = "store_true",
                       help = "Print progress")
   parser$add_argument("-p", "--plot",
-                      help = "Plot something. Give the filename")
+                      help = "Plot something. Give a filename")
+  parser$add_argument("-w", "--wordcloud",
+                      help = "Generate wordcloud for emotion. Give a filename.")
 
   parsed_args <- parser$parse_args()
 
